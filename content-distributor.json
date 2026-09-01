@@ -1,0 +1,234 @@
+{
+  "name": "CORE MODULES → Content Distributor",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3a3cedc6-baa7-4094-8b40-b517377d17d7",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $json[\"Original Content\"] || \"\";\n\nconst linkedinPost = content;\n\nconst xPost =\n  content.length <= 280\n    ? content\n    : content.substring(0, 277) + \"...\";\n\nconst facebookPost = content;\n\nreturn [\n  {\n    json: {\n      campaign: $json[\"Campaign\"],\n      contentId: $json[\"Content ID\"],\n      rowNumber: $json.row_number,\n\n      linkedinPost,\n      xPost,\n      facebookPost\n    }\n  }\n];"
+      },
+      "id": "7430cdda-41d8-40d3-af85-92c6ee65d379",
+      "name": "Format Per Channel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      contentId: $json.contentId,\n      rowNumber: $json.rowNumber,\n      campaign: $json.campaign,\n      platform: \"LinkedIn\",\n      status: \"SIMULATED_SUCCESS\",\n      postText: $json.linkedinPost,\n      distributedAt: new Date().toISOString(),\n      message: \"LinkedIn post successfully simulated\"\n    }\n  }\n];"
+      },
+      "id": "4747304a-a326-4a8a-b21c-e171e7f38641",
+      "name": "Post to LinkedIn Placeholder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      contentId: $json.contentId,\n      rowNumber: $json.rowNumber,\n      campaign: $json.campaign,\n      platform: \"X\",\n      status: \"SIMULATED_SUCCESS\",\n      postText: $json.xPost,\n      distributedAt: new Date().toISOString(),\n      message: \"X post successfully simulated\"\n    }\n  }\n];"
+      },
+      "id": "caf394b2-762e-4914-9dc5-463cd8175e1f",
+      "name": "Post to X Placeholder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      contentId: $json.contentId,\n      rowNumber: $json.rowNumber,\n      campaign: $json.campaign,\n      platform: \"Facebook\",\n      status: \"SIMULATED_SUCCESS\",\n      postText: $json.facebookPost,\n      distributedAt: new Date().toISOString(),\n      message: \"Facebook post successfully simulated\"\n    }\n  }\n];"
+      },
+      "id": "d5799de7-0ada-4750-9118-dede85a79577",
+      "name": "Post to Facebook Placeholder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      contentId: $json.contentId,\n      rowNumber: $json.rowNumber,\n      campaign: $json.campaign,\n      platform: $json.platform,\n      status: $json.status,\n      postText: $json.postText,\n      distributedAt: $json.distributedAt,\n      message: $json.message,\n      loggedAt: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "id": "200ba259-b6fe-4a87-b7d4-cff8da04503d",
+      "name": "Log Distribution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Approved Content",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Approved"
+            },
+            {
+              "lookupColumn": "Distributed",
+              "lookupValue": "No"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -560,
+        256
+      ],
+      "id": "f896dc6b-55a9-47ae-930c-3639492806ef",
+      "name": "Load Approved Content"
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\nThis workflow automates multi-channel content distribution. It pulls approved, undistributed content from a Google Sheets queue, prepares it for multiple social platforms, simulates publishing, and logs the distribution results. The current LinkedIn, X, and Facebook publishing steps are intentionally configured as API placeholders for demonstration and can be replaced with live platform integrations for production use.\n",
+        "height": 418,
+        "width": 272
+      },
+      "id": "9e47c6cd-676a-4885-a9b8-780302d23659",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**WHAT IT DOES:**\n\nAutomatically takes approved content and prepares it for distribution across LinkedIn, X, and Facebook.\n\n**HOW IT DOES IT:**\n\nRetrieves only approved and undistributed content from Google Sheets, formats the content for each platform, routes it through separate LinkedIn, X, and Facebook publishing paths, and records the distribution results.\n\n**WHY PAY FOR IT:**\n\nEliminates repetitive manual posting, reduces missed or duplicate content, centralizes multi-channel distribution, and gives businesses a scalable system for publishing content faster and more consistently.\n\n\n",
+        "height": 608,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        -400
+      ],
+      "id": "e9647ceb-8e78-4df6-b13e-4c247e125e32",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Load Approved Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Per Channel": {
+      "main": [
+        [
+          {
+            "node": "Post to LinkedIn Placeholder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to X Placeholder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Facebook Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to LinkedIn Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Log Distribution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to X Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Log Distribution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Facebook Placeholder": {
+      "main": [
+        [
+          {
+            "node": "Log Distribution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Approved Content": {
+      "main": [
+        [
+          {
+            "node": "Format Per Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,0 +1,175 @@
+{
+  "name": "CORE MODULES → Follow-up Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0adcb109-696d-4d18-98cb-a855593b36d9",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map((item) => {\n  const data = item.json;\n\n  const contactName = data[\"Contact Name\"] || \"there\";\n  const email = data[\"Email\"] || \"\";\n  const company = data[\"Company\"] || \"\";\n  const previousTopic =\n    data[\"Previous Topic\"] || \"improving your lead follow-up process\";\n  const followUpNumber = Number(data[\"Follow-up Number\"] || 0);\n\n  const subject =\n    followUpNumber >= 2\n      ? `Quick follow-up regarding ${previousTopic}`\n      : `Following up regarding ${previousTopic}`;\n\n  const body = `Hi ${contactName},\n\nI wanted to follow up on my previous note regarding ${previousTopic}.\n\nIf improving this process is still a priority for ${company}, I would be happy to show you a quick demonstration of how an AI automation workflow can capture, qualify, and follow up with leads automatically.\n\nWould you be available for a brief conversation this week?\n\nBest,\nAlex\nABM Solutions`;\n\n  const htmlBody = `\n<p>Hi ${contactName},</p>\n\n<p>I wanted to follow up on my previous note regarding ${previousTopic}.</p>\n\n<p>If improving this process is still a priority for ${company}, I would be happy to show you a quick demonstration of how an AI automation workflow can capture, qualify, and follow up with leads automatically.</p>\n\n<p>Would you be available for a brief conversation this week?</p>\n\n<p>Best,<br>\nAlex<br>\nABM Solutions</p>\n`;\n\n  return {\n    json: {\n      ...data,\n      to: email,\n      subject,\n      body,\n      htmlBody,\n      followUpAt: new Date().toISOString(),\n      status: \"FOLLOW_UP_COPY_READY\",\n    },\n  };\n});"
+      },
+      "id": "57df1e7d-a5c3-4d25-8ef7-e4f066e14168",
+      "name": "Create Follow-up Copy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentEmails = $input.all();\nconst originalRecords = $items(\"Create Follow-up Copy\");\n\nreturn sentEmails.map((sentEmail, index) => {\n  const original = originalRecords[index]?.json || {};\n\n  const currentCount = Number(original[\"Follow-up Number\"] || 0);\n  const updatedCount = currentCount + 1;\n\n  return {\n    json: {\n      ...original,\n      \"Follow-up Number\": updatedCount,\n      \"Last Follow-up Date\": new Date().toISOString(),\n      \"Status\": updatedCount >= 3 ? \"Completed\" : \"Open\",\n      gmailMessageId: sentEmail.json.id || \"\",\n      gmailThreadId: sentEmail.json.threadId || \"\",\n      crmUpdateStatus: \"FOLLOW_UP_LOGGED\",\n      nextRecommendedStep:\n        updatedCount >= 3\n          ? \"Move to nurture sequence or stop follow-up.\"\n          : \"Schedule the next follow-up.\"\n    }\n  };\n});"
+      },
+      "id": "24c77531-8e3f-49c1-8d2e-ca0dc14ec71a",
+      "name": "Update CRM Follow-up Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "FollowUps",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Open"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -32,
+        -80
+      ],
+      "id": "13994b4c-e563-4997-b364-318597b8c587",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.to}}",
+        "subject": "={{$json.subject}}",
+        "message": "={{$json.htmlBody}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        -80
+      ],
+      "id": "17e2a3ec-e5a7-45b4-97dd-785089cdca0d",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "content": "**SETUP + PURPOSE**\n\n**Purpose:** Automatically execute and track personalized prospect follow-ups so leads do not fall through the cracks.\n\n**Setup:**\n\n* Google Sheets CRM containing prospect data and follow-up status\n* Gmail account connected via OAuth\n* Follow-up email generation logic\n* CRM follow-up tracking logic\n* Test records with Status = \"Open\"\n\n**Workflow:**\nManual Trigger → Get Open CRM Records → Create Follow-up Copy → Send Email → Update Follow-up Count\n\n",
+        "height": 162,
+        "width": 272
+      },
+      "id": "82f5a200-9403-4d1a-8b72-1478630e07f6",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**WHAT IT DOES:**\n\nAutomatically identifies prospects requiring follow-up, generates personalized follow-up emails, sends them, and tracks each follow-up attempt.\n\n**HOW IT DOES IT:**\n\nPulls open prospects from a Google Sheets CRM → uses prospect data to dynamically generate personalized email copy → sends each email through Gmail → increments the prospect's follow-up count and determines the recommended next action.\n\n**WHY PAY FOR IT:**\n\nEliminates repetitive manual follow-up work, creates consistent prospect communication, reduces missed opportunities, and allows sales teams to manage more leads with less administrative effort.\n\n",
+        "height": 672,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -800
+      ],
+      "id": "fed80c4b-b5dd-446b-beff-ccf8669e4927",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Follow-up Copy": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Create Follow-up Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Update CRM Follow-up Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,0 +1,262 @@
+{
+  "name": "CORE MODULES → Lead Capture System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "abm-lead-capture",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7acc5eb8-be51-4691-af26-74d8c1f13407",
+      "name": "Lead Capture Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\n\nreturn [{\n  json: {\n    firstName: body.firstName || '',\n    lastName: body.lastName || '',\n    email: body.email || '',\n    phone: body.phone || '',\n    company: body.company || '',\n    source: body.source || 'webhook',\n    need: body.need || '',\n    capturedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "215c6546-b05d-4917-9a45-4277c97fe874",
+      "name": "Normalize Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const hasEmail = Boolean(($json.email || '').trim());\n\nreturn [{\n  json: {\n    ...$json,\n    validLead: hasEmail,\n    status: hasEmail ? 'accepted' : 'rejected_missing_email'\n  }\n}];"
+      },
+      "id": "059ec9da-e7d0-4c38-a6f7-b3317cf46bad",
+      "name": "Validate Required Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "f4d2b83b-a752-4c3c-b634-168fce779ef8",
+      "name": "Return Capture Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "First Name": "={{ $json.firstName }}",
+            "Last Name": "={{ $json.lastName }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Company": "={{ $json.company }}",
+            "Source": "={{ $json.source }}",
+            "Need": "={{ $json.need }}",
+            "Captured At": "={{ $json.capturedAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Need",
+              "displayName": "Need",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Captured At",
+              "displayName": "Captured At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        -144
+      ],
+      "id": "7da25a50-e916-415e-bcca-b1219caa2325",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "content": "**SETUP + PURPOSE**\n\n**Purpose:** Capture incoming leads automatically, standardize their information, validate required data, and save qualified submissions to a centralized lead database.\n\n**Setup Required:**\n\n* Connect Google Sheets credentials\n* Select the desired lead database spreadsheet\n* Map the required lead fields\n* Configure the webhook URL as the destination for the website, form, landing page, or other lead source\n* Publish the workflow and use the Production Webhook URL for live operation\n\n**Current Demo:** Webhook → Data Normalization → Validation → Google Sheets → Webhook Response\n\n",
+        "height": 162,
+        "width": 272
+      },
+      "id": "8c4d39cd-d50e-47bd-ae89-481c932c3cdb",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**WHAT IT DOES:**\n\nAutomatically captures inbound leads and stores their contact and inquiry information in a structured lead database.\n\n**HOW IT DOES IT:**\n\nReceives lead data through a webhook → standardizes the incoming fields → validates required information such as email → appends valid leads to Google Sheets → returns a response confirming the capture.\n\n**WHY PAY FOR IT:**\n\nEliminates manual lead entry, reduces lost or incomplete leads, centralizes prospect data, improves response speed, and creates a scalable foundation that can connect virtually any lead source to a CRM, spreadsheet, sales process, or follow-up automation.\n\n\n",
+        "height": 288,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        272,
+        -512
+      ],
+      "id": "6c0f6348-ce69-4cbd-8c6c-0e3709b6227d",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Capture Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Validate Required Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Required Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Return Capture Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

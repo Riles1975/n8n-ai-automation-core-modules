@@ -1,0 +1,161 @@
+{
+  "name": "CORE MODULES → CRM Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "abm-crm-automation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ed065126-d557-4f5e-adf8-3d4113a7f630",
+      "name": "CRM Update Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\n\nreturn [{\n  json: {\n    name: body.name || 'Unknown Lead',\n    email: body.email || '',\n    company: body.company || '',\n    stage: body.stage || 'New Lead',\n    source: body.source || 'Webhook',\n    notes: body.notes || '',\n    lastActivity: new Date().toISOString(),\n    nextTask: body.nextTask || 'Review and qualify lead'\n  }\n}];"
+      },
+      "id": "0c25c4d7-20ff-4f41-baf4-3baaf003cdb9",
+      "name": "Normalize CRM Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stage = ($json.stage || '').toLowerCase();\nlet crmAction = 'CREATE_GENERAL_FOLLOW_UP';\nlet priority = 'Medium';\nlet recommendedNextStep = 'Review the contact and decide the correct pipeline stage.';\n\nif (stage.includes('new')) {\n  crmAction = 'CREATE_LEAD_RECORD';\n  priority = 'Medium';\n  recommendedNextStep = 'Qualify the lead and send an initial follow-up.';\n}\n\nif (stage.includes('hot')) {\n  crmAction = 'CREATE_DEAL_RECORD';\n  priority = 'High';\n  recommendedNextStep = 'Contact immediately and attempt to book a sales call.';\n}\n\nif (stage.includes('client')) {\n  crmAction = 'CREATE_CLIENT_TASK';\n  priority = 'High';\n  recommendedNextStep = 'Create an onboarding or client success task.';\n}\n\nreturn [{\n  json: {\n    ...$json,\n    crmAction,\n    priority,\n    recommendedNextStep\n  }\n}];"
+      },
+      "id": "1d6fe198-5ee4-4f42-828a-ae79b41ddb05",
+      "name": "Determine CRM Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'CRM_AUTOMATION_READY',\n    processedAt: new Date().toISOString(),\n    contact: {\n      name: $json.name,\n      email: $json.email,\n      company: $json.company,\n      source: $json.source\n    },\n    crm: {\n      stage: $json.stage,\n      action: $json.crmAction,\n      priority: $json.priority,\n      nextTask: $json.nextTask,\n      recommendedNextStep: $json.recommendedNextStep,\n      notes: $json.notes\n    }\n  }\n}];"
+      },
+      "id": "8525f48d-51e6-426c-a0f3-7233914d06d4",
+      "name": "Prepare CRM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "57fd4f08-a8ef-447e-b749-94cd5b703463",
+      "name": "CRM Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**SETUP + PURPOSE**\n\n**Purpose:**\nAutomatically receive CRM updates, standardize incoming lead/customer data, determine the appropriate CRM action and priority, and return a structured response.\n\n**Setup:**\n\n1. Configure the CRM Update Webhook as a POST endpoint.\n2. Connect the system or form sending CRM data to the webhook URL.\n3. Send fields such as Name, Email, Company, Stage, Source, Notes, and Next Task.\n4. Publish the workflow and use the Production Webhook URL for live operation.\n\n\n",
+        "height": 482,
+        "width": 384
+      },
+      "id": "90184e42-a77b-49fa-8885-38a793514193",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -672
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**WHAT IT DOES:**\n\nReceives CRM data and automatically determines how each contact should be handled based on their pipeline stage.\n\n\n**HOW IT DOES IT:**\n\nWebhook receives the CRM record → data is cleaned and standardized → lead stage is analyzed → CRM action, priority, and recommended next step are assigned → structured response is returned to the originating system.\n\n\n**WHY PAY FOR IT:**\n\nEliminates manual CRM triage, standardizes lead handling, reduces missed follow-ups, and enables faster action on high-value opportunities. It can serve as a reusable automation layer connecting forms, lead-generation systems, CRMs, and sales workflows.\n",
+        "height": 480,
+        "width": 672,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        432,
+        -672
+      ],
+      "id": "46dfad5c-4dff-4fe5-a63e-285e102bfc39",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CRM Update Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize CRM Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize CRM Record": {
+      "main": [
+        [
+          {
+            "node": "Determine CRM Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine CRM Action": {
+      "main": [
+        [
+          {
+            "node": "Prepare CRM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CRM Response": {
+      "main": [
+        [
+          {
+            "node": "CRM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,0 +1,161 @@
+{
+  "name": "CORE MODULES → Sales Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst message = String(body.message || '').toLowerCase();\n\nlet buyerStage = 'Discovery';\nlet recommendedReply = 'The fastest next step is a 15-minute automation audit call.';\nlet nextAction = 'SEND_GENERAL_SALES_REPLY';\n\nif (message.includes('price') || message.includes('cost') || message.includes('budget')) {\n  buyerStage = 'Pricing';\n  recommendedReply = 'Projects typically start at $2,000 depending on complexity. The best next step is a quick automation audit so I can understand what you need and give you a realistic recommendation.';\n  nextAction = 'SEND_PRICING_REPLY';\n}\n\nif (message.includes('book') || message.includes('call') || message.includes('schedule') || message.includes('meeting')) {\n  buyerStage = 'Booking';\n  recommendedReply = 'Great. The best next step is to book a quick 15-minute automation audit. Here is the booking link: INSERT_BOOKING_LINK_HERE';\n  nextAction = 'SEND_BOOKING_LINK';\n}\n\nreturn [{\n  json: {\n    leadName: body.name || 'Unknown Prospect',\n    email: body.email || '',\n    company: body.company || '',\n    originalMessage: body.message || '',\n    buyerStage,\n    nextAction,\n    recommendedReply,\n    assessedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "c8de3866-c8a9-4adf-a06a-c34ebdb8afd4",
+      "name": "Assess Buyer Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const isBookingIntent = $json.nextAction === 'SEND_BOOKING_LINK';\n\nreturn [{\n  json: {\n    ...$json,\n    responseType: isBookingIntent ? 'BOOKING_LINK_RESPONSE' : 'SALES_REPLY_RESPONSE',\n    sendStatus: 'READY_TO_SEND_PLACEHOLDER',\n    message: isBookingIntent\n      ? 'Replace this node with Gmail, Outlook, SMS, Slack, or CRM message sender to send the booking link.'\n      : 'Replace this node with Gmail, Outlook, SMS, Slack, or CRM message sender to send the sales reply.'\n  }\n}];"
+      },
+      "id": "dd5f9864-ad5e-4acd-85de-b5ec9fa470db",
+      "name": "Prepare Sales Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    workflowStatus: 'SALES_AGENT_RESPONSE_READY',\n    processedAt: new Date().toISOString(),\n    leadName: $json.leadName,\n    email: $json.email,\n    company: $json.company,\n    buyerStage: $json.buyerStage,\n    nextAction: $json.nextAction,\n    recommendedReply: $json.recommendedReply,\n    responseType: $json.responseType,\n    sendStatus: $json.sendStatus\n  }\n}];"
+      },
+      "id": "5276fcfd-375f-47e7-bfbb-0c8edf341121",
+      "name": "Finalize Sales Agent Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "912a0bde-1db1-4a0c-adc9-f550a90b63aa",
+      "name": "Return Sales Agent Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "abm-sales-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "43946aa5-8ade-48ae-b274-a3b06e52932a",
+      "name": "Sales Agent Webhook (Proof of Concept -> COMPLETE ✅)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\n**Purpose:**\nReceives inbound sales inquiries through a webhook, evaluates the prospect's intent, prepares the appropriate sales response, and returns a structured response automatically.\n\n**Setup:**\n\n* Configure the webhook endpoint\n* Connect the webhook to the source of inbound leads\n* Customize buyer-intent rules and sales messaging\n* Replace placeholder booking link with the real calendar URL\n* Test with sample lead data\n* Publish the workflow to activate the Production Webhook\n\n\n",
+        "height": 482,
+        "width": 400
+      },
+      "id": "4844435d-c5f3-4375-ae89-01ea118223b3",
+      "name": "SETUP + PURPOSE",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WHAT IT DOES:\n\nAutomatically receives inbound prospect messages, identifies what the buyer is looking for, and prepares the appropriate sales response and next action.\n\n\nHOW IT DOES IT:\n\nA webhook captures the lead's name, email, company, and message. The workflow analyzes the message for buyer intent, classifies the prospect's stage, determines the recommended action, prepares a sales response, formats the final output, and returns the result through the webhook.\n\n\nWHY PAY FOR IT:\n\nIt reduces manual lead qualification and response time, helps businesses respond consistently to prospects, prevents high-intent opportunities from being missed, and provides a foundation that can be connected to email, CRM, SMS, Slack, or booking systems.\n\n",
+        "height": 480,
+        "width": 736,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -704
+      ],
+      "id": "f0c9a70b-babb-49ce-b0a0-c1698970a1a4",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Assess Buyer Intent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sales Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sales Response": {
+      "main": [
+        [
+          {
+            "node": "Finalize Sales Agent Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Sales Agent Output": {
+      "main": [
+        [
+          {
+            "node": "Return Sales Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Agent Webhook (Proof of Concept -> COMPLETE ✅)": {
+      "main": [
+        [
+          {
+            "node": "Assess Buyer Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

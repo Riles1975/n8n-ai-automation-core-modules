@@ -1,0 +1,393 @@
+{
+  "name": "CORE MODULES → AI Lead Qualifier",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "32346a5d-4177-49c8-8522-315ffd7482db",
+      "name": "Manual Demo Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        32,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      first_name: \"Jordan\",\n      last_name: \"Lee\",\n      email: \"jordan@acmegrowth.com\",\n      company: \"Acme Growth\",\n      job_title: \"VP of Revenue Operations\",\n      budget: 12000,\n      employees: 85,\n      urgency: \"within 30 days\",\n      decision_authority: \"decision maker\",\n      need: \"Automate lead routing, follow-up, CRM updates, and reporting\",\n      source: \"LinkedIn\",\n      notes: \"Requested a discovery call and shared their current process.\"\n    }\n  }\n];"
+      },
+      "id": "4676801f-2891-4aa6-985d-7b9052333185",
+      "name": "Demo Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-lead-qualifier",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0ca530e0-2ed6-4ae1-8f72-cb2f9b10b2ce",
+      "name": "Lead Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $json.body && typeof $json.body === 'object'\n  ? $json.body\n  : $json;\n\nconst text = (value) => value === undefined || value === null\n  ? ''\n  : String(value).trim();\n\nconst numberFrom = (value) => {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  const parsed = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));\n  return Number.isFinite(parsed) ? parsed : 0;\n};\n\nconst normalized = {\n  first_name: text(source.first_name || source.firstName || source.name?.split(' ')[0]),\n  last_name: text(source.last_name || source.lastName || source.name?.split(' ').slice(1).join(' ')),\n  email: text(source.email).toLowerCase(),\n  phone: text(source.phone),\n  company: text(source.company || source.company_name || source.organization),\n  job_title: text(source.job_title || source.jobTitle || source.title),\n  budget: numberFrom(source.budget || source.estimated_budget || source.monthly_budget),\n  employees: numberFrom(source.employees || source.employee_count || source.company_size),\n  urgency: text(source.urgency || source.timeline),\n  decision_authority: text(source.decision_authority || source.authority || source.role_in_decision),\n  need: text(source.need || source.pain_point || source.challenge || source.message),\n  source: text(source.source || source.lead_source || 'Unknown'),\n  notes: text(source.notes || source.additional_context),\n  received_at: new Date().toISOString()\n};\n\nnormalized.full_name = [normalized.first_name, normalized.last_name]\n  .filter(Boolean)\n  .join(' ');\n\nnormalized.lead_id = text(source.lead_id || source.id)\n  || `LEAD-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;\n\nreturn [{ json: normalized }];"
+      },
+      "id": "1eb6f988-afdd-4a46-b4fb-6559e989e38d",
+      "name": "Normalize Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $json;\nlet score = 0;\nconst reasons = [];\nconst nextActions = [];\n\nconst urgency = String(lead.urgency || '').toLowerCase();\nconst authority = String(lead.decision_authority || '').toLowerCase();\nconst title = String(lead.job_title || '').toLowerCase();\nconst need = String(lead.need || '').toLowerCase();\nconst notes = String(lead.notes || '').toLowerCase();\n\n// Budget: 0-30 points\nif (lead.budget >= 10000) {\n  score += 30;\n  reasons.push('Budget is $10,000 or higher');\n} else if (lead.budget >= 5000) {\n  score += 24;\n  reasons.push('Budget is between $5,000 and $9,999');\n} else if (lead.budget >= 2500) {\n  score += 16;\n  reasons.push('Budget is between $2,500 and $4,999');\n} else if (lead.budget > 0) {\n  score += 7;\n  reasons.push('Budget is below $2,500');\n} else {\n  reasons.push('Budget was not provided');\n}\n\n// Urgency: 0-20 points\nif (/(immediately|asap|this week|7 days|urgent)/.test(urgency)) {\n  score += 20;\n  reasons.push('Implementation is urgent');\n} else if (/(30 days|this month|2 weeks|3 weeks|4 weeks)/.test(urgency)) {\n  score += 16;\n  reasons.push('Implementation is planned within 30 days');\n} else if (/(60 days|90 days|quarter|1-3 months|2 months|3 months)/.test(urgency)) {\n  score += 9;\n  reasons.push('Implementation is planned within 90 days');\n} else if (urgency) {\n  score += 4;\n  reasons.push('A timeline was provided');\n} else {\n  reasons.push('Timeline was not provided');\n}\n\n// Company size: 0-15 points\nif (lead.employees >= 50) {\n  score += 15;\n  reasons.push('Company has 50 or more employees');\n} else if (lead.employees >= 20) {\n  score += 11;\n  reasons.push('Company has 20-49 employees');\n} else if (lead.employees >= 5) {\n  score += 7;\n  reasons.push('Company has 5-19 employees');\n} else if (lead.employees > 0) {\n  score += 3;\n  reasons.push('Company has fewer than 5 employees');\n} else {\n  reasons.push('Company size was not provided');\n}\n\n// Authority: 0-15 points\nif (/(owner|founder|ceo|president|decision maker|final decision)/.test(authority + ' ' + title)) {\n  score += 15;\n  reasons.push('Lead appears to be the final decision-maker');\n} else if (/(vp|vice president|director|head of|chief|cmo|cro|coo|cto|cio)/.test(authority + ' ' + title)) {\n  score += 13;\n  reasons.push('Lead appears to have senior buying influence');\n} else if (/(manager|recommend|influence|champion)/.test(authority + ' ' + title)) {\n  score += 8;\n  reasons.push('Lead appears to influence the purchase');\n} else {\n  reasons.push('Decision authority is unclear');\n}\n\n// Need and fit: 0-15 points\nconst highFitTerms = [\n  'automation', 'lead routing', 'follow-up', 'crm', 'reporting',\n  'manual process', 'integration', 'workflow', 'n8n', 'ai'\n];\nconst fitMatches = highFitTerms.filter(term => need.includes(term) || notes.includes(term));\n\nif (fitMatches.length >= 3) {\n  score += 15;\n  reasons.push(`Strong automation fit: ${fitMatches.slice(0, 4).join(', ')}`);\n} else if (fitMatches.length >= 1) {\n  score += 10;\n  reasons.push(`Relevant automation need: ${fitMatches.join(', ')}`);\n} else if (need.length >= 25) {\n  score += 5;\n  reasons.push('A meaningful business need was described');\n} else {\n  reasons.push('Business need requires clarification');\n}\n\n// Engagement/data quality: 0-5 points\nlet engagement = 0;\nif (lead.email) engagement += 1;\nif (lead.phone) engagement += 1;\nif (lead.company) engagement += 1;\nif (lead.need.length >= 40) engagement += 1;\nif (/(call|meeting|demo|proposal|quote)/.test(notes)) engagement += 1;\nscore += engagement;\n\nscore = Math.max(0, Math.min(100, score));\n\nlet qualification;\nlet priority;\nlet recommendedResponseTime;\n\nif (score >= 80) {\n  qualification = 'HOT';\n  priority = 'P1';\n  recommendedResponseTime = 'Within 15 minutes';\n  nextActions.push(\n    'Send an immediate personalized acknowledgement',\n    'Create or update the CRM opportunity',\n    'Assign the lead to a sales owner',\n    'Book a discovery call within 24 hours'\n  );\n} else if (score >= 55) {\n  qualification = 'WARM';\n  priority = 'P2';\n  recommendedResponseTime = 'Within 4 business hours';\n  nextActions.push(\n    'Send a personalized follow-up',\n    'Request missing budget, timeline, or authority details',\n    'Add the lead to a short nurture sequence',\n    'Offer a discovery call'\n  );\n} else {\n  qualification = 'COLD';\n  priority = 'P3';\n  recommendedResponseTime = 'Within 1 business day';\n  nextActions.push(\n    'Send a helpful resource',\n    'Add the lead to long-term nurture',\n    'Requalify when engagement or buying intent increases'\n  );\n}\n\nconst summary = `${lead.full_name || 'The lead'} from ${lead.company || 'an unspecified company'} scored ${score}/100 and is classified as ${qualification}.`;\n\nreturn [{\n  json: {\n    ...lead,\n    lead_score: score,\n    qualification,\n    priority,\n    recommended_response_time: recommendedResponseTime,\n    qualification_summary: summary,\n    scoring_reasons: reasons,\n    recommended_next_actions: nextActions,\n    qualified_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a7686f3c-45d5-412e-8d14-3d47f74e4479",
+      "name": "AI Lead Scoring Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eb12e0a0-b655-4fa9-80b6-87bed1eaa2cf",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9c91a71d-c24e-4c0d-b7b8-d9ab36565c9e",
+      "name": "Is Hot Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    ...item.json,\n    route: 'HOT_LEAD_FAST_TRACK',\n    sales_message: `High-priority lead: ${item.json.full_name || item.json.email || item.json.lead_id} scored ${item.json.lead_score}/100. Contact within 15 minutes.`,\n    workflow_status: 'Qualified and routed to immediate sales follow-up'\n  }\n}));"
+      },
+      "id": "8c0f1933-a832-43fc-a77f-31498f0b4617",
+      "name": "Prepare Hot Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5ef1852d-88d1-4479-9b91-8dabddb295a0",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": 55,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "013ad7d5-9598-4078-a822-e173d1931748",
+      "name": "Is Warm Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    ...item.json,\n    route: 'WARM_LEAD_NURTURE',\n    sales_message: `Promising lead: ${item.json.full_name || item.json.email || item.json.lead_id} scored ${item.json.lead_score}/100. Follow up within 4 business hours.`,\n    workflow_status: 'Qualified and routed to personalized nurture'\n  }\n}));"
+      },
+      "id": "c3a5d048-a715-49f9-9b9c-ecce99a627f8",
+      "name": "Prepare Warm Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    ...item.json,\n    route: 'COLD_LEAD_LONG_TERM_NURTURE',\n    sales_message: `Early-stage lead: ${item.json.full_name || item.json.email || item.json.lead_id} scored ${item.json.lead_score}/100. Add to long-term nurture.`,\n    workflow_status: 'Qualified and routed to long-term nurture'\n  }\n}));"
+      },
+      "id": "977e5f07-41c8-456b-bc15-b3bf5e76fbbf",
+      "name": "Prepare Cold Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "961025b1-af7c-4105-bc76-f823f5a08780",
+      "name": "Return Hot Lead Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "e82fe869-01b1-486b-bd6b-40523334a178",
+      "name": "Return Warm Lead Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "acb769c2-8efa-4983-ab65-c028deb913cf",
+      "name": "Return Cold Lead Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\nReceives new leads through a webhook or manual demo trigger, standardizes the incoming data, scores each lead based on buying intent and business fit, then automatically routes the lead into the appropriate sales path. Designed as a reusable qualification layer that can sit between lead-generation sources and downstream CRM, outreach, or sales automations.",
+        "height": 386,
+        "width": 272
+      },
+      "id": "bf43330d-f344-4f2d-b9cc-786654b7d617",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        288,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WHAT IT DOES:\nAutomatically scores incoming leads from 0 to 100 and classifies them as Hot, Warm, or Cold.\n\nHOW IT DOES IT:\nNormalizes the lead data, evaluates budget, urgency, company size, decision authority, business need, and engagement, then applies qualification logic and routes the lead to the appropriate follow-up path.\n\nWHY PAY FOR IT:\nEliminates manual lead qualification, helps sales teams prioritize the best opportunities, reduces response time, prevents valuable leads from being overlooked, and allows businesses to focus sales effort where it is most likely to generate revenue.\n\n",
+        "height": 384,
+        "width": 576,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        576,
+        0
+      ],
+      "id": "ce52569d-e7a8-4c88-bb69-829e675d5202",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Demo Trigger": {
+      "main": [
+        [
+          {
+            "node": "Demo Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demo Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "AI Lead Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Lead Scoring Engine": {
+      "main": [
+        [
+          {
+            "node": "Is Hot Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Hot Lead?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Hot Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Warm Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Warm Lead?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Warm Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Cold Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Hot Lead": {
+      "main": [
+        [
+          {
+            "node": "Return Hot Lead Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Warm Lead": {
+      "main": [
+        [
+          {
+            "node": "Return Warm Lead Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Cold Lead": {
+      "main": [
+        [
+          {
+            "node": "Return Cold Lead Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

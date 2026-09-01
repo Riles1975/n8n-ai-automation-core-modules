@@ -1,0 +1,248 @@
+{
+  "name": "CORE MODULES → Outreach Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1001f7a-1796-45b6-9522-12e599682ed3",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      company: 'Sample Business',\n      contactName: 'Owner',\n      email: 'demo@example.com',\n      painPoint: 'missed lead follow-up',\n      offer: 'AI follow-up automation'\n    }\n  }\n];"
+      },
+      "id": "b8075ddb-4f77-434c-b68a-e8ed84beec40",
+      "name": "Input Prospect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json;\nconst company = p.company || 'your business';\nconst contactName = p.contactName || 'there';\nconst painPoint = p.painPoint || 'slow lead follow-up';\nconst offer = p.offer || 'AI automation';\n\nreturn [{\n  json: {\n    ...p,\n    subject: `Quick idea for ${company}`,\n    emailBody: `Hi ${contactName},\\n\\nI noticed ${company} may benefit from reducing ${painPoint}.\\n\\nI build simple ${offer} workflows that capture, qualify, and follow up with leads automatically, so fewer opportunities slip through the cracks.\\n\\nWorth a quick 15-minute conversation this week?\\n\\nAlex`,\n    outreachStatus: 'OUTREACH_DRAFT_READY'\n  }\n}];"
+      },
+      "id": "68abcd26-1f0f-40b3-936e-bdfe554a883e",
+      "name": "Draft Outreach Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        160
+      ],
+      "id": "994f82bc-29d7-4743-b2a9-00626b772c35",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Outreach Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toISO() }}",
+            "Company": "={{ $('Draft Outreach Message').item.json.company }}",
+            "Contact": "={{ $('Draft Outreach Message').item.json.contactName }}",
+            "Email": "={{ $('Draft Outreach Message').item.json.email }}",
+            "Subject": "={{ $('Draft Outreach Message').item.json.subject }}",
+            "Gmail Message ID": "={{ $json.id }}",
+            "Status": "SENT"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Gmail Message ID",
+              "displayName": "Gmail Message ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        976,
+        160
+      ],
+      "id": "c4a95bfe-7a98-4180-9708-c10b322cd0ab",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\n**Purpose:** Automates outbound prospecting by generating personalized outreach emails, sending them through Gmail, and automatically logging each outreach attempt.\n\n**Setup Required:**\n\n* Connect Gmail credentials\n* Connect Google Sheets credentials\n* Select/create an Outreach Log spreadsheet\n* Configure prospect input data\n* Customize outreach messaging/offer\n* Replace demo email address with production prospect data\n",
+        "height": 162,
+        "width": 272
+      },
+      "id": "5a4ee92c-6eec-4a3a-b682-74e822e43492",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**WHAT IT DOES:**\n\nAutomatically turns prospect data into personalized outbound emails, sends them through Gmail, and records each successful outreach attempt in Google Sheets.\n\n**HOW IT DOES IT:**\n\nManual Trigger → Prospect Data → Personalized Message Generation → Gmail Send → Google Sheets Logging\n\nThe workflow takes the prospect's company, contact, email, pain point, and offer; generates a customized subject and email body; sends the message through Gmail; then logs the date, prospect details, subject, Gmail Message ID, and send status.\n\n**WHY PAY FOR IT:**\n\nEliminates repetitive manual outreach work, creates consistent prospect messaging, prevents outreach activity from going untracked, and provides a scalable foundation for automated sales prospecting. It can be customized for different businesses, offers, lead sources, CRMs, and email platforms.\n\n",
+        "height": 288,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -192
+      ],
+      "id": "1f2f019c-3720-4513-b481-ead795ec85df",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Prospect": {
+      "main": [
+        [
+          {
+            "node": "Draft Outreach Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Outreach Message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

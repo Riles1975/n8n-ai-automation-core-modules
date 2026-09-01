@@ -1,0 +1,130 @@
+{
+  "name": "CORE MODULES → Content Generator",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6a01471c-2d8b-4a6e-ab2a-c46890facd60",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { topic: 'AI automation for missed lead follow-up', audience: 'local service businesses', cta: 'Book a free automation audit' } }];"
+      },
+      "id": "6bd564e9-3be2-4c18-b1e6-b0a9ecd2f433",
+      "name": "Content Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const topic = $json.topic || 'AI automation';\nconst audience = $json.audience || 'business owners';\nconst cta = $json.cta || 'Book a free call';\n\nreturn [{\n  json: {\n    topic,\n    audience,\n    cta,\n    linkedinPost: `Most ${audience} do not need more leads. They need faster follow-up. When new inquiries sit unanswered, prospects go cold, competitors win the deal, and revenue leaks out of the business. An AI follow-up workflow can respond instantly, qualify intent, and route hot leads to the right person. ${cta}.`,\n    xPost: `Missed follow-up = lost revenue. AI automation can capture, qualify, and follow up with leads instantly. ${cta}.`,\n    facebookPost: `Most ${audience} lose revenue because leads go cold before anyone follows up. AI automation fixes this by responding instantly, qualifying each prospect, and making sure hot leads never get ignored. ${cta}.`,\n    emailSubject: 'Stop losing leads to slow follow-up',\n    emailBody: `Most teams do not need more leads. They need faster follow-up.\\n\\nWhen prospects wait too long for a response, they move on. An AI follow-up system can reply instantly, qualify interest, and send the best leads directly to your team.\\n\\n${cta}.`\n  }\n}];"
+      },
+      "id": "d68301e5-a70e-4bc9-ba5a-f095d55e979e",
+      "name": "Generate Content Pack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { savedAt: new Date().toISOString(), status: 'CONTENT_PACK_READY', topic: $json.topic, audience: $json.audience, linkedinPost: $json.linkedinPost, xPost: $json.xPost, facebookPost: $json.facebookPost, emailSubject: $json.emailSubject, emailBody: $json.emailBody } }];"
+      },
+      "id": "b23f24ad-e349-4152-8044-85d899f97f99",
+      "name": "Save Content Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\nPurpose:\nProof-of-concept content generation module that turns a simple marketing brief into a ready-to-use multi-channel content pack.\n\nCurrent Setup:\n• Manual Trigger starts workflow\n• Content Brief defines topic, audience + CTA\n• Generate Content Pack creates platform-specific copy\n• Save Content Output packages final content + timestamp/status\n\nDemo Input:\nTopic: AI automation for missed lead follow-up\nAudience: Local service businesses\nCTA: Book a free automation audit\n\nCurrent Version:\nUses JavaScript-based generation for a reliable, zero-API proof of concept.",
+        "height": 162,
+        "width": 272
+      },
+      "id": "cbcb0861-717c-47c2-8850-38ad8163310b",
+      "name": "SETUP + PURPOSE1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WHAT IT DOES:\nTransforms one marketing brief into multiple ready-to-use pieces of content for LinkedIn, X, Facebook, and email.\n\nHOW IT DOES IT:\nReceives a topic, target audience, and CTA, then generates platform-specific marketing copy and an email subject and body. It packages everything into one structured content output with a completion status and timestamp.\n\nWHY PAY FOR IT:\nCreates multiple marketing assets in seconds, eliminates repetitive content drafting, maintains consistent messaging across channels, and saves marketing teams time. It can be customized for virtually any business, offer, or audience and upgraded with AI generation, automated publishing, and content storage.\n",
+        "height": 592,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -528
+      ],
+      "id": "629a5d74-3384-4b48-a17e-b937a33f0d44",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Content Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Brief": {
+      "main": [
+        [
+          {
+            "node": "Generate Content Pack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Content Pack": {
+      "main": [
+        [
+          {
+            "node": "Save Content Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

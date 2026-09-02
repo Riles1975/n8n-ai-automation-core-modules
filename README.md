@@ -4,6 +4,8 @@ A collection of 10 completed and tested n8n proof-of-concept workflows for lead 
 
 These workflows demonstrate modular automation architecture, JavaScript data processing, conditional routing, webhook handling, API integration, Google Workspace automation, and reusable business logic.
 
+![n8n AI Automation Core Modules Overview](core-modules-overview.png)
+
 ## Core Modules
 
 | Module                                          | Function                                                                   | Business Value                                                        |

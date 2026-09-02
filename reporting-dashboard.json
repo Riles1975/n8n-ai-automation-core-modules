@@ -1,0 +1,275 @@
+{
+  "name": "CORE MODULES → Reporting Dashboard",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ea117249-22bb-4255-a1a6-b378335ac6e5",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        160,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { leadsCaptured: 48, hotLeads: 15, outreachSent: 96, replies: 21, bookedCalls: 7, revenue: 12600 } }];"
+      },
+      "id": "f433d681-cce8-45c4-8692-d0e4720ece8f",
+      "name": "Pull Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { workflowStatus: 'REPORT_GENERATED', generatedAt: new Date().toISOString(), dashboardStatus: $json.dashboardStatus, summary: `Daily Report\\n\\nLeads Captured: ${$json.leadsCaptured}\\nHot Leads: ${$json.hotLeads}\\nOutreach Sent: ${$json.outreachSent}\\nReplies: ${$json.replies}\\nBooked Calls: ${$json.bookedCalls}\\nRevenue: $${$json.revenue}\\nConversion Rate: ${$json.conversionRate}\\nReply Rate: ${$json.replyRate}\\nHot Lead Rate: ${$json.hotLeadRate}`, message: 'Replace this node with Gmail, Outlook, Slack, Microsoft Teams, Discord, or another reporting destination.' } }];"
+      },
+      "id": "f5fa61eb-5b47-4fdf-9cf7-5a72431cab14",
+      "name": "Email Daily Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = Number($json.leadsCaptured || 0);\nconst hot = Number($json.hotLeads || 0);\nconst outreach = Number($json.outreachSent || 0);\nconst replies = Number($json.replies || 0);\nconst calls = Number($json.bookedCalls || 0);\nconst revenue = Number($json.revenue || 0);\n\nconst conversionRate = leads ? ((calls / leads) * 100).toFixed(2) : '0.00';\nconst replyRate = outreach ? ((replies / outreach) * 100).toFixed(2) : '0.00';\nconst hotLeadRate = leads ? ((hot / leads) * 100).toFixed(2) : '0.00';\n\nconst formattedDate = new Date().toLocaleString('en-US', {\n  timeZone: 'America/Chicago',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: 'numeric',\n  minute: '2-digit',\n  hour12: true,\n});\n\nreturn [\n  {\n    json: {\n      date: formattedDate,\n      leadsCaptured: leads,\n      hotLeads: hot,\n      outreachSent: outreach,\n      replies,\n      bookedCalls: calls,\n      revenue,\n      conversionRate: conversionRate + '%',\n      replyRate: replyRate + '%',\n      hotLeadRate: hotLeadRate + '%'\n    }\n  }\n];"
+      },
+      "id": "05ee3beb-feac-4b25-a548-a2c509d5361c",
+      "name": "Calculate KPI Summary1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Reporting",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.date }}",
+            "Leads": "={{ $json.leadsCaptured }}",
+            "Hot Leads": "={{ $json.hotLeads }}",
+            "Outreach": "={{ $json.outreachSent }}",
+            "Replies": "={{ $json.replies }}",
+            "Calls": "={{ $json.bookedCalls }}",
+            "Revenue": "={{ $json.revenue }}",
+            "Conversion %": "={{ $json.conversionRate }}",
+            "Reply %": "={{ $json.replyRate }}",
+            "Hot Lead %": "={{ $json.hotLeadRate }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Leads",
+              "displayName": "Leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hot Leads",
+              "displayName": "Hot Leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Outreach",
+              "displayName": "Outreach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Replies",
+              "displayName": "Replies",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Calls",
+              "displayName": "Calls",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Revenue",
+              "displayName": "Revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Conversion %",
+              "displayName": "Conversion %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reply %",
+              "displayName": "Reply %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hot Lead %",
+              "displayName": "Hot Lead %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        976,
+        288
+      ],
+      "id": "ae5466de-bcab-4511-8d1c-ec155e140291",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\nSETUP:\n• Connect Google Sheets credentials\n• Select the client's reporting spreadsheet\n• Map KPI fields to the appropriate columns\n• Replace demo metrics with the client's live data sources\n• Configure the final reporting destination (Gmail, Slack, Teams, etc.)\n• Replace the Manual Trigger with a Schedule Trigger for automated daily/weekly reporting\n\nPURPOSE:\nAutomatically collect business metrics, calculate key performance indicators, log historical results, and deliver recurring performance reports without manual reporting work.\n",
+        "height": 450,
+        "width": 416
+      },
+      "id": "4887d42c-557a-4ef0-bc4c-29f6501710f0",
+      "name": "SETUP + PURPOSE",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        176,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WHAT IT DOES:\n\nAutomatically generates a centralized KPI report showing leads, hot leads, outreach, replies, booked calls, revenue, conversion rate, reply rate, and hot lead rate.\n\n\nHOW IT DOES IT:\n\nPulls business metrics → calculates KPI percentages → appends the results to Google Sheets → sends the completed KPI summary to the designated reporting destination.\n\n\nWHY PAY FOR IT:\n\nEliminates repetitive manual reporting, gives decision-makers consistent visibility into business performance, creates a historical KPI record, and makes it easier to identify trends and make faster data-driven decisions.\n\n",
+        "height": 528,
+        "width": 480,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -336
+      ],
+      "id": "1ab9d8fa-22f9-4bf2-8dba-c699427bec18",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Pull Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull Metrics": {
+      "main": [
+        [
+          {
+            "node": "Calculate KPI Summary1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate KPI Summary1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Email Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}

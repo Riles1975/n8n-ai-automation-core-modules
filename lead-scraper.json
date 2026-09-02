@@ -1,0 +1,285 @@
+{
+  "name": "CORE MODULES → Lead Scraper",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d4ea0ef3-ebee-4e5c-a81b-09d1ffa0be92",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        208,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    searchQuery: \"Roofing Companies\",\n    industry: \"Roofing\",\n    location: \"Austin, TX\",\n    targetRole: \"Owner\",\n    maxLeads: 25,\n    leadSource: \"Google Maps\",\n    saveDestination: \"Google Sheets\"\n  }\n}];"
+      },
+      "id": "ede77549-a84f-4e43-8255-f50a0a891a95",
+      "name": "Prospect Source Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\n\nconst leads = [\n  {\n    companyName: \"Austin Premier Roofing\",\n    contactName: \"Unknown Owner\",\n    title: config.targetRole,\n    website: \"https://example.com\",\n    email: \"info@example.com\",\n    phone: \"555-555-5555\",\n    location: config.location,\n    industry: config.industry,\n    leadSource: config.leadSource,\n    status: \"New Lead\"\n  },\n  {\n    companyName: \"Lone Star Roof Pros\",\n    contactName: \"Unknown Owner\",\n    title: config.targetRole,\n    website: \"https://example.com\",\n    email: \"contact@example.com\",\n    phone: \"555-555-5556\",\n    location: config.location,\n    industry: config.industry,\n    leadSource: config.leadSource,\n    status: \"New Lead\"\n  },\n  {\n    companyName: \"Capital City Roofing Co.\",\n    contactName: \"Unknown Owner\",\n    title: config.targetRole,\n    website: \"https://example.com\",\n    email: \"hello@example.com\",\n    phone: \"555-555-5557\",\n    location: config.location,\n    industry: config.industry,\n    leadSource: config.leadSource,\n    status: \"New Lead\"\n  }\n];\n\nreturn leads.map(lead => ({\n  json: {\n    ...lead,\n    dateAdded: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "4f4a4afd-7c02-4b2c-b95c-b06e8c7bd93c",
+      "name": "Generate Demo Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    workflowStatus: 'LEAD_SCRAPER_READY',\n    processedAt: new Date().toISOString(),\n    company: $json.company,\n    website: $json.website,\n    industry: $json.industry,\n    location: $json.location,\n    contactName: $json.contactName,\n    email: $json.email,\n    painPoint: $json.painPoint,\n    sourceQuery: $json.sourceQuery,\n    saveStatus: $json.saveStatus\n  }\n}];"
+      },
+      "id": "a80b668b-0846-4ba5-8507-dbdf1c865a8e",
+      "name": "Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "companyName": "={{$json.companyName}}",
+            "contactName": "={{$json.contactName}}",
+            "title": "={{$json.title}}",
+            "website": "={{$json.website}}",
+            "email": "={{$json.email}}",
+            "phone": "={{$json.phone}}",
+            "location": "={{$json.location}}",
+            "industry": "={{$json.industry}}",
+            "leadSource": "={{$json.leadSource}}",
+            "status": "={{$json.status}}",
+            "dateAdded": "={{$json.dateAdded}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "companyName",
+              "displayName": "companyName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contactName",
+              "displayName": "contactName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "leadSource",
+              "displayName": "leadSource",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dateAdded",
+              "displayName": "dateAdded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        976,
+        -160
+      ],
+      "id": "96bfab0a-4403-43bb-80f3-8511e82a90c5",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "content": "SETUP + PURPOSE\n\nPURPOSE:\nProof-of-concept lead generation module that creates structured prospect records and automatically saves them to Google Sheets.\n\nSETUP:\n1. Configure industry, location, target role, and lead settings in \"Prospect Source Config.\"\n2. Connect Google Sheets credentials.\n3. Select the destination spreadsheet and sheet.\n4. Map lead fields to the corresponding Google Sheets columns.\n5. Execute the workflow.\n\nCURRENT MODE:\nUses demo leads for reliable testing and demonstration. A live lead source/API can replace the demo generator later.",
+        "height": 514,
+        "width": 496
+      },
+      "id": "93b6ce2a-69c6-47e8-a0a5-3a8021cc0615",
+      "name": "SETUP + PURPOSE",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        96,
+        -816
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WHAT IT DOES:\n\nAutomatically generates structured prospect records and saves them to a centralized lead database in Google Sheets.\n\n\nHOW IT DOES IT:\n\nA configurable prospect profile defines the target market. The workflow generates standardized lead data, maps each field, appends the leads to Google Sheets, and returns a completion summary.\n\n\nWHY PAY FOR IT:\n\nEliminates repetitive manual lead entry, standardizes prospect data, saves sales teams time, and provides a reusable foundation for automated prospecting. It can later be connected to live lead sources, enrichment tools, and CRMs.",
+        "height": 672,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -976
+      ],
+      "id": "6e9d5693-f9d1-4268-b347-9fb1616a647c",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prospect Source Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prospect Source Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Demo Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Demo Leads": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}
